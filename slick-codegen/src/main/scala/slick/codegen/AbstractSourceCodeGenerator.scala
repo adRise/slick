@@ -238,9 +238,8 @@ implicit def $name(implicit $dependencies): GR[${TableClass.elementType}] = GR{
       }
       def code = {
         val parentsString = parents.map(" with " + _).mkString("")
-        val args = model.name.schema.map(n => s"""Some("$n")""") ++ Seq("\"" + model.name.table + "\"")
         s"""
-class $name(_tableTag: Tag) extends profile.api.Table[$elementType](_tableTag, ${args.mkString(", ")})$parentsString {
+class $name(_tableTag: Tag, _tableSchema: Option[String], _tableName: String) extends profile.api.Table[$elementType](_tableTag, _tableSchema, _tableName)$parentsString {
   ${indent(body.map(_.mkString("\n")).mkString("\n\n"))}
 }
         """.trim()
@@ -248,7 +247,11 @@ class $name(_tableTag: Tag) extends profile.api.Table[$elementType](_tableTag, $
     }
 
     trait AbstractSourceCodeTableValueDef extends AbstractTableValueDef {
-      def code = s"lazy val $name = new TableQuery(tag => new ${TableClass.name}(tag))"
+      def code = {
+        val schema = model.name.schema.map(n => s"""Some("$n")""").getOrElse("None")
+        val quotedTableName = "\"" + model.name.table + "\""
+        s"lazy val $name = new TableQuery(tag => new ${TableClass.name}(tag, $schema, $quotedTableName))"
+      }
     }
 
     class AbstractSourceCodeColumnDef(model: m.Column) extends AbstractColumnDef(model) {

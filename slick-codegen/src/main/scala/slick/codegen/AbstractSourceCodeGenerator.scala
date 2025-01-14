@@ -238,8 +238,13 @@ implicit def $name(implicit $dependencies): GR[${TableClass.elementType}] = GR{
       }
       def code = {
         val parentsString = parents.map(" with " + _).mkString("")
+        val defaultArgs = Seq(
+          model.name.schema.map(n => s"""Some("$n")""").getOrElse("None"),
+          s""""${model.name.table}""""
+        )
         s"""
 class $name(_tableTag: Tag, _tableSchema: Option[String], _tableName: String) extends profile.api.Table[$elementType](_tableTag, _tableSchema, _tableName)$parentsString {
+  def this(_tableTag: Tag) = this(_tableTag, ${defaultArgs.mkString(", ")})
   ${indent(body.map(_.mkString("\n")).mkString("\n\n"))}
 }
         """.trim()
